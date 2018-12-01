@@ -3,19 +3,14 @@ using System.Collections.Generic;
 
 namespace CoreEscuela.Entidades
 {
-    public class Asignatura
+    public class Asignatura : ObjetoEscuelaBase
     {
-        public string UniqueId { get; set; }
-        public string Nombre { get; set; }
-
-        private List<Evaluación> _evaluaciones;
-        public List<Evaluación> Evaluaciones
+        public Asignatura()
         {
-            get { return _evaluaciones ?? new List<Evaluación>(); }
-            set { _evaluaciones = value; }
+            Evaluaciones = new List<Evaluación>();
         }
 
-        public Asignatura() => UniqueId = Guid.NewGuid().ToString();
+        public List<Evaluación> Evaluaciones { get; set; }
 
     }
 }

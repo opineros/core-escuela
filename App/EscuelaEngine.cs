@@ -2,10 +2,11 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using CoreEscuela.Entidades;
+using CoreEscuela.Util;
 
 namespace CoreEscuela
 {
-    public class EscuelaEngine
+    public sealed class EscuelaEngine
     {
         public Escuela Escuela { get; set; }
         public EscuelaEngine()
@@ -21,8 +22,181 @@ namespace CoreEscuela
             CargarEvaluaciones(5);
         }
 
+        public void ImprimirDiccionario(Dictionary<LlaveDiccionario, IEnumerable<ObjetoEscuelaBase>> dic, bool imprEval = false)
+        {
+            foreach (var obj in dic)
+            {
+                Printer.WriteTitle(obj.Key.ToString());
+
+                foreach (var val in obj.Value)
+                {
+                    switch (obj.Key)
+                    {
+                        case LlaveDiccionario.Evaluación:
+                            if (imprEval)
+                                Console.WriteLine(val);
+                            break;
+                        case LlaveDiccionario.Escuela:
+                            Console.WriteLine($"Escuela: {val}");
+                            break;
+                        case LlaveDiccionario.Alumno:
+                            Console.WriteLine($"Alumno: {val.Nombre}");
+                            break;
+                        case LlaveDiccionario.Curso:
+                            var curtemp = val as Curso;
+                            if (curtemp != null)
+                                Console.WriteLine($"Curso: {curtemp.Nombre} Cantidad Alumnos: {curtemp.Alumnos.Count}");
+                            break;
+                        default:
+                            Console.WriteLine(val);
+                            break;
+                    }
+                }
+            }
+        }
+
+        public Dictionary<LlaveDiccionario, IEnumerable<ObjetoEscuelaBase>> GetDiccionarioObjetos()
+        {
+            var diccionario = new Dictionary<LlaveDiccionario, IEnumerable<ObjetoEscuelaBase>>();
+
+            diccionario.Add(LlaveDiccionario.Escuela, new[] { Escuela });
+            diccionario.Add(LlaveDiccionario.Curso, Escuela.Cursos.Cast<ObjetoEscuelaBase>());
+
+            List<Evaluación> lstEvaluación = new List<Evaluación>();
+            List<Alumno> listaAlumnos = new List<Alumno>();
+            List<Asignatura> listaAsignaturas = new List<Asignatura>();
+
+            foreach (var curso in Escuela.Cursos)
+            {
+                listaAlumnos.AddRange(curso.Alumnos);
+                listaAsignaturas.AddRange(curso.Asignaturas);
+
+                foreach (var alumno in curso.Alumnos)
+                {
+                    lstEvaluación.AddRange(alumno.Evaluaciones);
+                }
+            }
+            diccionario.Add(LlaveDiccionario.Alumno, listaAlumnos);
+            diccionario.Add(LlaveDiccionario.Asignatura, listaAsignaturas);
+            diccionario[LlaveDiccionario.Evaluación] = lstEvaluación;
+            // diccionario.Add(LlaveDiccionario.Evaluación, lstEvaluación.Cast<ObjetoEscuelaBase>());
+
+            return diccionario;
+        }
+
+        public IReadOnlyList<ObjetoEscuelaBase> GetObjetosEscuela(
+           bool traeEvaluaciones = true,
+           bool tareAlumnos = true,
+           bool traeAsignaturas = true,
+           bool traeCursos = true)
+        {
+            int dummy = 0;
+            return GetObjetosEscuela(out dummy, out dummy, out dummy, out dummy);
+        }
+
+        public IReadOnlyList<ObjetoEscuelaBase> GetObjetosEscuela(
+           out int conteoEvaluaciones,
+           bool traeEvaluaciones = true,
+           bool tareAlumnos = true,
+           bool traeAsignaturas = true,
+           bool traeCursos = true)
+        {
+            int dummy = 0;
+            return GetObjetosEscuela(out conteoEvaluaciones, out dummy, out dummy, out dummy);
+        }
+
+        public IReadOnlyList<ObjetoEscuelaBase> GetObjetosEscuela(
+          out int conteoEvaluaciones,
+          out int conteoCursos,
+          bool traeEvaluaciones = true,
+          bool tareAlumnos = true,
+          bool traeAsignaturas = true,
+          bool traeCursos = true)
+        {
+            int dummy = 0;
+            return GetObjetosEscuela(out conteoEvaluaciones, out conteoCursos, out dummy, out dummy);
+        }
+
+        public IReadOnlyList<ObjetoEscuelaBase> GetObjetosEscuela(
+          out int conteoEvaluaciones,
+          out int conteoCursos,
+          out int conteoAsignaturas,
+          bool traeEvaluaciones = true,
+          bool tareAlumnos = true,
+          bool traeAsignaturas = true,
+          bool traeCursos = true)
+        {
+            int dummy = 0;
+            return GetObjetosEscuela(out conteoEvaluaciones, out conteoCursos, out conteoAsignaturas, out dummy);
+        }
+
+        public IReadOnlyList<ObjetoEscuelaBase> GetObjetosEscuela(
+            out int conteoEvaluaciones,
+            out int conteoCursos,
+            out int conteoAsignaturas,
+            out int conteoAlumnos,
+            bool traeEvaluaciones = true,
+            bool tareAlumnos = true,
+            bool traeAsignaturas = true,
+            bool traeCursos = true)
+        {
+            conteoEvaluaciones = conteoAsignaturas = conteoAlumnos = 0;
+
+            var listaObj = new List<ObjetoEscuelaBase>();
+            listaObj.Add(Escuela);
+            if (traeCursos) listaObj.AddRange(Escuela.Cursos);
+
+            conteoCursos = Escuela.Cursos.Count;
+            foreach (var curso in Escuela.Cursos)
+            {
+                conteoAsignaturas += curso.Asignaturas.Count;
+                conteoAlumnos += curso.Alumnos.Count;
+
+                if (traeAsignaturas) listaObj.AddRange(curso.Asignaturas);
+
+                if (tareAlumnos) listaObj.AddRange(curso.Alumnos);
+
+                if (traeEvaluaciones)
+                {
+                    foreach (var alumno in curso.Alumnos)
+                    {
+                        listaObj.AddRange(alumno.Evaluaciones);
+                        conteoEvaluaciones += alumno.Evaluaciones.Count;
+                    }
+                }
+            }
+
+            return listaObj.AsReadOnly();
+        }
+
+        public List<ObjetoEscuelaBase> GetObjetosEscuela()
+        {
+            var listaObj = new List<ObjetoEscuelaBase>();
+            listaObj.Add(Escuela);
+            listaObj.AddRange(Escuela.Cursos);
+
+            foreach (var curso in Escuela.Cursos)
+            {
+                listaObj.AddRange(curso.Asignaturas);
+                listaObj.AddRange(curso.Alumnos);
+
+                foreach (var alumno in curso.Alumnos)
+                {
+                    listaObj.AddRange(alumno.Evaluaciones);
+                }
+            }
+
+            return listaObj;
+        }
+
+        #region Metodos de Carga
+
         private void CargarEvaluaciones(int cantEvaluaciones)
         {
+            //Cuantos milisegundos a pasado desde que se encendió la maquina
+            //System.Environment.TickCount
+            
+            Random rnd = new Random(System.Environment.TickCount);
             foreach (var curso in Escuela.Cursos)
             {
                 foreach (var asignatura in curso.Asignaturas)
@@ -30,17 +204,16 @@ namespace CoreEscuela
                     foreach (var alumno in curso.Alumnos)
                     {
                         Evaluación[] evaluacións = new Evaluación[cantEvaluaciones];
-                        Random rnd = new Random(System.Environment.TickCount);
+                      
                         for (int i = 0; i < cantEvaluaciones; i++)
                         {
-                            Evaluación evaluacion = new Evaluación
+                            evaluacións[i] = new Evaluación
                             {
                                 Alumno = alumno,
                                 Asignatura = asignatura,
                                 Nombre = $"{asignatura.Nombre}-Eval#{i + 1}",
-                                Nota = (float)(5 * rnd.NextDouble())
+                                Nota = MathF.Round((5 * (float)rnd.NextDouble()),2)
                             };
-                            evaluacións[i] = evaluacion;
                         }
                         alumno.Evaluaciones.AddRange(evaluacións);
                         asignatura.Evaluaciones.AddRange(evaluacións);
@@ -93,5 +266,8 @@ namespace CoreEscuela
                 curso.Alumnos = GenerarAlumnosAlAzar(new Random().Next(5, 20));
             }
         }
+
+        #endregion
+
     }
 }
